@@ -1,0 +1,42 @@
+{
+    "explorer.confirmDelete": false,
+    "explorer.confirmDragAndDrop": false,
+
+    "workbench.colorTheme": "Default Dark+",
+
+    "terminal.integrated.fontSize": 20,
+
+    "git.enableSmartCommit": true,
+    "git.autofetch": true,
+    "git.confirmSync": false,
+
+    "editor.fontSize": 20,
+    "editor.wordWrap": "on",
+    "editor.wrappingIndent": "indent",
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.renderControlCharacters": true,
+    "editor.renderLineHighlight": "all",
+    "editor.cursorSmoothCaretAnimation": true,
+
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
+    "files.autoSave": "afterDelay",
+
+    "debug.openDebug": "neverOpen",
+    "debug.openExplorerOnEnd": true,
+    "debug.internalConsoleOptions": "openOnSessionStart",
+
+    "python.pythonPath": "python",
+    "python.jediEnabled": false,
+    "python.linting.enabled": false,
+    "python.linting.pylintEnabled": false,
+    "python.globalModuleInstallation": true,
+    "python.formatting.autopep8Args": [
+        "W391",
+        "E402",
+        "E501"
+    ],
+    "python.dataScience.changeDirOnImportExport": false,
+}
