@@ -1,6 +1,6 @@
 import tensorflow
 
-bias_initializer = tensorflow.keras.initializers.glorot_uniform()
+bias_initializer = None
 conv2d_regularizer = None
 depthwise_regularizer = None
 alpha_regularizer = None
@@ -157,5 +157,5 @@ def MobileFaceNet(num_classes):
 if __name__ == '__main__':
     tensorflow.enable_eager_execution(config=tensorflow.ConfigProto(allow_soft_placement=True, gpu_options=tensorflow.GPUOptions(allow_growth=True)))
     data = tensorflow.random.uniform([4, 112, 112, 3])
-    model = MobileFaceNet(85742)
+    model = MobileFaceNet(10)
     embed = model(data)
