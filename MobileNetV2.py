@@ -140,7 +140,7 @@ class MobileNetV2(tensorflow.keras.Model):
         return x
 
 if __name__ == '__main__':
-    tensorflow.enable_eager_execution()
+    tensorflow.enable_eager_execution(config=tensorflow.ConfigProto(allow_soft_placement=True, gpu_options=tensorflow.GPUOptions(allow_growth=True), inter_op_parallelism_threads=0, intra_op_parallelism_threads=0))
     data = tensorflow.random.uniform([128, 224, 224, 3])
     model = MobileNetV2()
     y = model(data)

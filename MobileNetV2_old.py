@@ -2,15 +2,6 @@ import tensorflow
 
 regularizer = tensorflow.contrib.layers.l1_l2_regularizer(1e-7, 1e-7)
 
-def prelu(x):
-    alpha = tensorflow.get_variable(
-        name='alpha',
-        shape=x.shape.as_list()[-1],
-        initializer=tensorflow.initializers.constant(0.25),
-        regularizer=None)
-    y = tensorflow.nn.relu(x) - alpha * tensorflow.nn.relu(-x)
-    return y
-
 def MobileNetV2Block(x, stride, t, output_channel, layer, training):
     with tensorflow.variable_scope('MobileNetV2Block%s' % layer):
         with tensorflow.variable_scope('conv1'):
@@ -35,7 +26,7 @@ def MobileNetV2Block(x, stride, t, output_channel, layer, training):
                 gamma_regularizer=None,
                 training=training,
                 fused=None)
-            y = prelu(y)
+            y = tensorflow.nn.relu6(y)
 
         with tensorflow.variable_scope('conv2'):
             weight = tensorflow.get_variable(
@@ -59,7 +50,7 @@ def MobileNetV2Block(x, stride, t, output_channel, layer, training):
                 gamma_regularizer=None,
                 training=training,
                 fused=None)
-            y = prelu(y)
+            y = tensorflow.nn.relu6(y)
 
         with tensorflow.variable_scope('conv3'):
             weight = tensorflow.get_variable(
@@ -88,17 +79,17 @@ def MobileNetV2Block(x, stride, t, output_channel, layer, training):
             y = x + y
     return y
 
-def MobileFaceNet(x, num_classes, training):
-    with tensorflow.variable_scope('MobileFaceNet', reuse=tensorflow.AUTO_REUSE):
+def MobileNetV2(x, width, num_classes, training):
+    with tensorflow.variable_scope('MobileNetV2', reuse=tensorflow.AUTO_REUSE):
         with tensorflow.variable_scope('layer1'):
             weight = tensorflow.get_variable(
                 name='weight',
-                shape=[3, 3, x.shape.as_list()[-1], 64],
+                shape=[3, 3, x.shape.as_list()[-1], int(32 * width)],
                 initializer=tensorflow.initializers.glorot_uniform(),
                 regularizer=regularizer)
             bias = tensorflow.get_variable(
                 name='bias',
-                shape=64,
+                shape=int(32 * width),
                 initializer=tensorflow.initializers.zeros(),
                 regularizer=regularizer)
             y = tensorflow.nn.conv2d(
@@ -112,107 +103,41 @@ def MobileFaceNet(x, num_classes, training):
                 gamma_regularizer=None,
                 training=training,
                 fused=None)
-            y = prelu(y)
+            y = tensorflow.nn.relu6(y)
 
-        with tensorflow.variable_scope('layer2'):
-            weight = tensorflow.get_variable(
-                name='weight',
-                shape=[3, 3, y.shape.as_list()[-1], 1],
-                initializer=tensorflow.initializers.glorot_uniform(),
-                regularizer=regularizer)
-            bias = tensorflow.get_variable(
-                name='bias',
-                shape=y.shape.as_list()[-1],
-                initializer=tensorflow.initializers.zeros(),
-                regularizer=regularizer)
-            y = tensorflow.nn.depthwise_conv2d(
-                input=y,
-                filter=weight,
-                strides=[1, 1, 1, 1],
-                padding='SAME') + bias
-            y = tensorflow.layers.batch_normalization(
-                inputs=y,
-                beta_regularizer=None,
-                gamma_regularizer=None,
-                training=training,
-                fused=None)
-            y = prelu(y)
+        y = MobileNetV2Block(y, 1, 1, int(16 * width), 2, training)
 
-        y = MobileNetV2Block(y, 2, 2, 64, 3, training)
-        y = MobileNetV2Block(y, 1, 2, 64, 4, training)
-        y = MobileNetV2Block(y, 1, 2, 64, 5, training)
-        y = MobileNetV2Block(y, 1, 2, 64, 6, training)
-        y = MobileNetV2Block(y, 1, 2, 64, 7, training)
+        y = MobileNetV2Block(y, 2, 6, int(24 * width), 3, training)
+        y = MobileNetV2Block(y, 1, 6, int(24 * width), 4, training)
 
-        y = MobileNetV2Block(y, 2, 4, 128, 8, training)
-        y = MobileNetV2Block(y, 1, 2, 128, 9, training)
-        y = MobileNetV2Block(y, 1, 2, 128, 10, training)
-        y = MobileNetV2Block(y, 1, 2, 128, 11, training)
-        y = MobileNetV2Block(y, 1, 2, 128, 12, training)
-        y = MobileNetV2Block(y, 1, 2, 128, 13, training)
-        y = MobileNetV2Block(y, 1, 2, 128, 14, training)
+        y = MobileNetV2Block(y, 2, 6, int(32 * width), 5, training)
+        y = MobileNetV2Block(y, 1, 6, int(32 * width), 6, training)
+        y = MobileNetV2Block(y, 1, 6, int(32 * width), 7, training)
 
-        y = MobileNetV2Block(y, 2, 4, 128, 15, training)
+        y = MobileNetV2Block(y, 2, 6, int(64 * width), 8, training)
+        y = MobileNetV2Block(y, 1, 6, int(64 * width), 9, training)
+        y = MobileNetV2Block(y, 1, 6, int(64 * width), 10, training)
+        y = MobileNetV2Block(y, 1, 6, int(64 * width), 11, training)
 
-        y = MobileNetV2Block(y, 1, 2, 128, 16, training)
-        y = MobileNetV2Block(y, 1, 2, 128, 17, training)
+        y = MobileNetV2Block(y, 1, 6, int(96 * width), 12, training)
+        y = MobileNetV2Block(y, 1, 6, int(96 * width), 13, training)
+        y = MobileNetV2Block(y, 1, 6, int(96 * width), 14, training)
 
-        with tensorflow.variable_scope('layer18'):
-            weight = tensorflow.get_variable(
-                name='weight',
-                shape=[1, 1, y.shape.as_list()[-1], 512],
-                initializer=tensorflow.initializers.glorot_uniform(),
-                regularizer=regularizer)
-            bias = tensorflow.get_variable(
-                name='bias',
-                shape=512,
-                initializer=tensorflow.initializers.zeros(),
-                regularizer=regularizer)
-            y = tensorflow.nn.conv2d(
-                input=y,
-                filter=weight,
-                strides=[1, 1, 1, 1],
-                padding='SAME') + bias
-            y = tensorflow.layers.batch_normalization(
-                inputs=y,
-                beta_regularizer=None,
-                gamma_regularizer=None,
-                training=training,
-                fused=None)
-            y = prelu(y)
+        y = MobileNetV2Block(y, 2, 6, int(160 * width), 15, training)
+        y = MobileNetV2Block(y, 1, 6, int(160 * width), 16, training)
+        y = MobileNetV2Block(y, 1, 6, int(160 * width), 17, training)
+
+        y = MobileNetV2Block(y, 1, 6, int(320 * width), 18, training)
 
         with tensorflow.variable_scope('layer19'):
             weight = tensorflow.get_variable(
                 name='weight',
-                shape=[7, 7, y.shape.as_list()[-1], 1],
+                shape=[1, 1, y.shape.as_list()[-1], int(1280 * width)],
                 initializer=tensorflow.initializers.glorot_uniform(),
                 regularizer=regularizer)
             bias = tensorflow.get_variable(
                 name='bias',
-                shape=y.shape.as_list()[-1],
-                initializer=tensorflow.initializers.zeros(),
-                regularizer=regularizer)
-            y = tensorflow.nn.depthwise_conv2d(
-                input=y,
-                filter=weight,
-                strides=[1, 1, 1, 1],
-                padding='VALID') + bias
-            y = tensorflow.layers.batch_normalization(
-                inputs=y,
-                beta_regularizer=None,
-                gamma_regularizer=None,
-                training=training,
-                fused=None)
-
-        with tensorflow.variable_scope('layer20'):
-            weight = tensorflow.get_variable(
-                name='weight',
-                shape=[1, 1, y.shape.as_list()[-1], 128],
-                initializer=tensorflow.initializers.glorot_uniform(),
-                regularizer=regularizer)
-            bias = tensorflow.get_variable(
-                name='bias',
-                shape=128,
+                shape=int(1280 * width),
                 initializer=tensorflow.initializers.zeros(),
                 regularizer=regularizer)
             y = tensorflow.nn.conv2d(
@@ -226,18 +151,29 @@ def MobileFaceNet(x, num_classes, training):
                 gamma_regularizer=None,
                 training=training,
                 fused=None)
-            embed = tensorflow.squeeze(y, [1, 2])
+            y = tensorflow.nn.relu6(y)
+            y = tensorflow.nn.avg_pool2d(y, 7, 1, 'VALID')
 
-        with tensorflow.variable_scope('layer21'):
+        with tensorflow.variable_scope('layer20'):
             weight = tensorflow.get_variable(
                 name='weight',
-                shape=[embed.shape.as_list()[-1], num_classes],
+                shape=[1, 1, y.shape.as_list()[-1], num_classes],
                 initializer=tensorflow.initializers.glorot_uniform(),
                 regularizer=regularizer)
-            predict = tensorflow.matmul(embed, weight)
-    return predict
+            bias = tensorflow.get_variable(
+                name='bias',
+                shape=num_classes,
+                initializer=tensorflow.initializers.zeros(),
+                regularizer=regularizer)
+            y = tensorflow.nn.conv2d(
+                input=y,
+                filter=weight,
+                strides=[1, 1, 1, 1],
+                padding='SAME') + bias
+    return y
 
 if __name__ == '__main__':
     tensorflow.enable_eager_execution(config=tensorflow.ConfigProto(allow_soft_placement=True, gpu_options=tensorflow.GPUOptions(allow_growth=True), inter_op_parallelism_threads=0, intra_op_parallelism_threads=0))
-    data = tensorflow.random.uniform([4, 112, 112, 3])
-    predict = MobileFaceNet(data, 10, True)
+    data = tensorflow.random.uniform([128, 224, 224, 3])
+    y = MobileNetV2(data, 1.4, 10, True)
+    print()
